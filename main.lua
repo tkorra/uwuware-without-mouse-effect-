@@ -58,6 +58,16 @@ function library:Create(class, properties)
 	return inst
 end
 
+function library:Draw(class, properties)
+	local properties = type(properties) == 'table' and properties or {};
+
+	local object = Drawing.new(class)
+	for p, v in next, properties do 
+		object[p] = v; 
+	end
+	return object
+end
+
 local function createOptionHolder(holderTitle, parent, parentTable, subHolder)
 	local size = subHolder and 34 or 40
 	parentTable.main = library:Create("ImageButton", {
@@ -1435,6 +1445,28 @@ local function createColor(option, parent, holder)
 	end
 end
 
+local function createDivider(option, parent, holder)
+	option.main = library:Create('Frame', {
+	    LayoutOrder = option.position,
+	    BackgroundTransparency = 1,
+
+	    Size = UDim2.new(1, 0, 0, 6),
+	    Parent = parent.content;
+	})
+
+	option.divider = library:Create('Frame', {
+	    AnchorPoint = Vector2.new(0.5, 0.5),
+	    Position = UDim2.fromScale(0.5, 0.5),
+
+	    BorderSizePixel = 0,
+	    BorderColor3 = Color3.fromRGB(50, 50, 50),
+	    BackgroundColor3 = Color3.fromRGB(50, 50, 50),
+
+	    Size = UDim2.new(1, -10, 0, 2),
+	    Parent = option.main,
+	})
+end
+
 local function loadOptions(option, holder)
 	for _,newOption in next, option.options do
 		if newOption.type == "label" then
@@ -1453,6 +1485,8 @@ local function loadOptions(option, holder)
 			createSlider(newOption, option)
 		elseif newOption.type == "color" then
 			createColor(newOption, option, holder)
+		elseif newOption.type == 'divider' then
+			createDivider(newOption, option, holder)
 		elseif newOption.type == "folder" then
 			newOption:init()
 		end
@@ -1468,6 +1502,15 @@ local function getFnctions(parent)
 		table.insert(self.options, option)
 		
 		return option
+	end
+
+	function parent:AddDivider(option)
+		option = type(option) == 'table' and option or {}
+		option.type = 'divider'
+		option.position = #self.options
+		table.insert(self.options, option)
+
+		return options
 	end
 	
 	function parent:AddToggle(option)
@@ -1609,14 +1652,18 @@ local UnlockMouse
 function library:Init()
 	
 	self.base = self.base or self:Create("ScreenGui")
-	if syn and syn.protect_gui then
+	if (syn and syn.protect_gui) then
 		syn.protect_gui(self.base)
-	elseif get_hidden_gui then
-		get_hidden_gui(self.base)
+		self.base.Parent = game:GetService"CoreGui"
+	elseif type(get_hidden_gui) == 'function' then
+		self.base.Parent = get_hidden_gui()
+	elseif type(gethui) == 'function' then
+		self.base.Parent = gethui()
 	else
-        self.base.Parent = game.CoreGui
+		self.base.Name = tostring(math.random())
+		self.base.Parent = game:GetService"CoreGui"
 	end
-	self.base.Parent = game:GetService"CoreGui"
+	
 	
 	self.cursor = self.cursor
 	
